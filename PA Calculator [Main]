@@ -1,0 +1,118 @@
+# Install Gradio
+!pip install gradio --quiet
+
+# Import necessary libraries
+import gradio as gr
+
+# Median Survival Data based on your table
+median_survival_data = {
+    'sex': {'1': 88, '2': 100},  # 1 = Male, 2 = Female
+    'age_group': {'1': 121, '2': 85, '3': 72, '4': 50},  # Age groups 1-4
+    'primary_site': {'1': 56.5, '2': 55, '3': 72, '4': 60, '5': 56.5},  # Primary site
+    'race': {'1': 94.8, '2': 83, '3': 87.3, '4': 84.2, '5': 94.8},  # Race recode
+    'icd_o_3': {'1': 78.8, '2': 68, '3': 51, '4': 44, '5': 45},  # ICD-O-3 histology codes
+    'grade': {'1': 84, '2': 77.5, '3': 65, '4': 50},  # Tumor grade
+    'radiation': {'1': 85, '2': 68},  # Radiation yes or no
+    'chemotherapy': {'1': 142, '2': 61.6},  # Chemotherapy yes or no
+    'mets_at_dx_bone': {'1': 45, '0': 93},  # Bone metastasis yes or no
+    'mets_at_dx_liver': {'1': 54, '0': 81},
+    'mets_at_dx_lung': {'1': 60, '0': 72}
+}
+
+# Function to calculate median survival
+def calculate_median_survival(sex, age_group, primary_site, race, icd_o_3, grade,
+                              radiation, chemotherapy, mets_bone, mets_liver, mets_lung):
+    # Convert input labels to their corresponding codes
+    sex_code = '1' if sex == 'Male' else '2'
+    age_group_codes = {'<45': '1', '45-54': '2', '55-64': '3', '65+': '4'}
+    primary_site_codes = {
+        'Pancreas NOS': '1',
+        'Head of Pancreas': '2',
+        'Body of Pancreas': '3',
+        'Tail of Pancreas': '4',
+        'Other': '5'
+    }
+    race_codes = {
+        'Non-Hispanic White': '1',
+        'Non-Hispanic Black': '2',
+        'Non-Hispanic Asian/Pacific Islander': '3',
+        'Non-Hispanic American Indian/Alaska Native': '4',
+        'Hispanic': '5'
+    }
+    icd_o_3_codes = {
+        'Adenocarcinoma NOS': '1',
+        'Mucinous Adenocarcinoma': '2',
+        'Duct Carcinoma': '3',
+        'Endocrine Tumors': '4',
+        'Other': '5'
+    }
+    grade_codes = {
+        'Well Differentiated': '1',
+        'Moderately Differentiated': '2',
+        'Poorly Differentiated': '3',
+        'Undifferentiated/Anaplastic': '4'
+    }
+    yes_no_codes = {'Yes': '1', 'No': '2'}
+    mets_codes = {'Yes': '1', 'No': '0'}
+
+    sex_survival = median_survival_data['sex'][sex_code]
+    age_survival = median_survival_data['age_group'][age_group_codes[age_group]]
+    site_survival = median_survival_data['primary_site'][primary_site_codes[primary_site]]
+    race_survival = median_survival_data['race'][race_codes[race]]
+    histology_survival = median_survival_data['icd_o_3'][icd_o_3_codes[icd_o_3]]
+    grade_survival = median_survival_data['grade'][grade_codes[grade]]
+    radiation_survival = median_survival_data['radiation'][yes_no_codes[radiation]]
+    chemo_survival = median_survival_data['chemotherapy'][yes_no_codes[chemotherapy]]
+    bone_met_survival = median_survival_data['mets_at_dx_bone'][mets_codes[mets_bone]]
+    liver_met_survival = median_survival_data['mets_at_dx_liver'][mets_codes[mets_liver]]
+    lung_met_survival = median_survival_data['mets_at_dx_lung'][mets_codes[mets_lung]]
+
+    # Average the median survival across the factors
+    avg_survival = (sex_survival + age_survival + site_survival + race_survival + histology_survival +
+                    grade_survival + radiation_survival + chemo_survival + bone_met_survival +
+                    liver_met_survival + lung_met_survival) / 11
+
+    return f"Predicted Median Survival (Months): {avg_survival:.2f}"
+
+# Create Gradio interface
+def gradio_interface(sex, age_group, primary_site, race, icd_o_3, grade,
+                     radiation, chemotherapy, mets_bone, mets_liver, mets_lung):
+    result = calculate_median_survival(sex, age_group, primary_site, race, icd_o_3, grade,
+                                       radiation, chemotherapy, mets_bone, mets_liver, mets_lung)
+    return result
+
+sex_options = ['Male', 'Female']
+age_group_options = ['<45', '45-54', '55-64', '65+']
+primary_site_options = ['Pancreas NOS', 'Head of Pancreas', 'Body of Pancreas', 'Tail of Pancreas', 'Other']
+race_options = ['Non-Hispanic White', 'Non-Hispanic Black', 'Non-Hispanic Asian/Pacific Islander', 'Non-Hispanic American Indian/Alaska Native', 'Hispanic']
+icd_o_3_options = ['Adenocarcinoma NOS', 'Mucinous Adenocarcinoma', 'Duct Carcinoma', 'Endocrine Tumors', 'Other']
+grade_options = ['Well Differentiated', 'Moderately Differentiated', 'Poorly Differentiated', 'Undifferentiated/Anaplastic']
+yes_no_options = ['Yes', 'No']
+mets_options = ['Yes', 'No']
+
+inputs = [
+    gr.Radio(sex_options, label="Sex"),
+    gr.Radio(age_group_options, label="Age Group"),
+    gr.Dropdown(primary_site_options, label="Primary Site"),
+    gr.Dropdown(race_options, label="Race"),
+    gr.Dropdown(icd_o_3_options, label="Histology"),
+    gr.Dropdown(grade_options, label="Grade"),
+    gr.Radio(yes_no_options, label="Radiation"),
+    gr.Radio(yes_no_options, label="Chemotherapy"),
+    gr.Radio(mets_options, label="Bone Metastasis"),
+    gr.Radio(mets_options, label="Liver Metastasis"),
+    gr.Radio(mets_options, label="Lung Metastasis")
+]
+
+outputs = gr.Textbox(label="Result")
+
+app = gr.Interface(
+    fn=gradio_interface,
+    inputs=inputs,
+    outputs=outputs,
+    title="Median Survival Calculator",
+    description="Enter the patient's details to calculate the predicted median survival (in months).",
+    allow_flagging="never"
+)
+
+app.launch(share=True)
